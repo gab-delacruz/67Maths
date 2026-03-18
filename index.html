@@ -800,17 +800,14 @@ async function generateProblems(count = 20) {
 IMPORTANT: Keep solutions concise. Return ONLY the JSON array, no markdown, no explanation, no extra text.`;
 
   try {
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`, {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         contents: [{ parts: [{ text: prompt }] }],
         generationConfig: {
           temperature: 0.9,
-          maxOutputTokens: 3000
-        },
-        thinkingConfig: {
-          thinkingBudget: 0
+          maxOutputTokens: 2048
         }
       })
     });
