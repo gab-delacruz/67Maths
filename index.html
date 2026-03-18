@@ -1,0 +1,1091 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <meta name="theme-color" content="#0f0f1a" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="67Maths" />
+  <meta name="application-name" content="67Maths" />
+  <meta name="description" content="AI-powered math practice with spaced repetition" />
+  <title>67Maths</title>
+
+  <!-- PWA Manifest (inline) -->
+  <link rel="manifest" href="data:application/json;base64,eyJuYW1lIjoiNjdNYXRocyIsInNob3J0X25hbWUiOiI2N01hdGhzIiwiZGVzY3JpcHRpb24iOiJBSS1wb3dlcmVkIG1hdGggcHJhY3RpY2Ugd2l0aCBzcGFjZWQgcmVwZXRpdGlvbiIsInN0YXJ0X3VybCI6Ii4iLCJkaXNwbGF5Ijoic3RhbmRhbG9uZSIsImJhY2tncm91bmRfY29sb3IiOiIjMGEwYTE0IiwidGhlbWVfY29sb3IiOiIjMGYwZjFhIiwib3JpZW50YXRpb24iOiJwb3J0cmFpdCIsImljb25zIjpbeyJzcmMiOiJkYXRhOmltYWdlL3N2Zyt4bWw7YmFzZTY0LFBITjJaeUIzYVdSMGFEMGlNakF3SWlCb1pXbG5hSFE5SWpJd01DSWdkbWxsZDBKdmVEMGlNQ0lnZUcxc2JuTTlJbWgwZEhBNkx5OTNkM2N1ZHpNdWIzSm5Mekl3TURBdmMzWm5JaUJqYkdGemN6MGlZbUZ6WlNJK1BIUmxlSFFnWW14aFkyc3Rjbll0ZEdWemRDMW1iM0lnY21WaFpDQnRZWGtnY0hKdlptbHNaVHh2Y21jOEwzUmxlSFErUEM5emRtYysiLCJ0eXBlIjoiaW1hZ2Uvc3ZnK3htbCIsInNpemVzIjoiYW55In1dfQ==" />
+
+  <!-- Apple touch icon (SVG inline) -->
+  <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjIwMCIgaGVpZ2h0PSIyMDAiIHJ4PSI0MCIgZmlsbD0iIzBhMGExNCIvPjx0ZXh0IHg9IjUwJSIgeT0iNTUlIiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZm9udC1zaXplPSI3MCIgZm9udC13ZWlnaHQ9IjkwMCIgZmlsbD0iIzZjNjNmZiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSI+Njc8L3RleHQ+PC9zdmc+" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet" />
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+
+  <style>
+    :root {
+      --bg: #0a0a14;
+      --surface: #12121f;
+      --surface2: #1a1a2e;
+      --border: #2a2a45;
+      --accent: #6c63ff;
+      --accent2: #ff6584;
+      --accent3: #43e97b;
+      --text: #e8e8f0;
+      --text2: #8888aa;
+      --easy: #43e97b;
+      --hard: #f7971e;
+      --missed: #ff6584;
+      --radius: 16px;
+      --font-display: 'Syne', sans-serif;
+      --font-mono: 'DM Mono', monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-display);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Background grid */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(108,99,255,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(108,99,255,0.04) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    #app {
+      position: relative;
+      z-index: 1;
+      max-width: 480px;
+      margin: 0 auto;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── SCREENS ── */
+    .screen { display: none; flex-direction: column; flex: 1; padding: 24px 20px; animation: fadeIn 0.3s ease; }
+    .screen.active { display: flex; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* ── HEADER ── */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 28px;
+    }
+    .logo {
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+    }
+    .logo span { color: var(--accent); }
+    .streak-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 100px;
+      padding: 6px 14px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    /* ── CARDS ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+    .card-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--text2);
+      margin-bottom: 10px;
+    }
+
+    /* ── PROGRESS BAR ── */
+    .progress-wrap { margin-bottom: 24px; }
+    .progress-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    .progress-label { font-size: 13px; color: var(--text2); }
+    .progress-count { font-size: 22px; font-weight: 800; }
+    .progress-track {
+      height: 8px;
+      background: var(--surface2);
+      border-radius: 100px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      border-radius: 100px;
+      transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* ── TOPIC CHIPS ── */
+    .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+    .chip {
+      padding: 7px 14px;
+      border-radius: 100px;
+      font-size: 13px;
+      font-weight: 600;
+      border: 1.5px solid var(--border);
+      background: transparent;
+      color: var(--text2);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .chip.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    /* ── BUTTONS ── */
+    .btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 16px 24px;
+      border-radius: var(--radius);
+      font-family: var(--font-display);
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s;
+      width: 100%;
+    }
+    .btn:active { transform: scale(0.97); }
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+    }
+    .btn-primary:hover { background: #7c74ff; }
+    .btn-ghost {
+      background: var(--surface2);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    .grade-btns { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-top: 20px; }
+    .btn-easy { background: rgba(67,233,123,0.15); color: var(--easy); border: 1.5px solid var(--easy); font-size: 13px; padding: 14px 8px; border-radius: 12px; }
+    .btn-hard { background: rgba(247,151,30,0.15); color: var(--hard); border: 1.5px solid var(--hard); font-size: 13px; padding: 14px 8px; border-radius: 12px; }
+    .btn-missed { background: rgba(255,101,132,0.15); color: var(--missed); border: 1.5px solid var(--missed); font-size: 13px; padding: 14px 8px; border-radius: 12px; }
+    .btn-easy:hover, .btn-hard:hover, .btn-missed:hover { opacity: 0.8; }
+
+    /* ── PROBLEM CARD ── */
+    .problem-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 28px 24px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 280px;
+    }
+    .problem-meta {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    .tag {
+      padding: 4px 12px;
+      border-radius: 100px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+    .tag-topic { background: rgba(108,99,255,0.2); color: var(--accent); }
+    .tag-type { background: rgba(255,101,132,0.15); color: var(--accent2); }
+    .tag-diff-easy { background: rgba(67,233,123,0.15); color: var(--easy); }
+    .tag-diff-medium { background: rgba(247,151,30,0.15); color: var(--hard); }
+    .tag-diff-hard { background: rgba(255,101,132,0.15); color: var(--missed); }
+
+    .problem-text {
+      font-family: var(--font-mono);
+      font-size: 15px;
+      line-height: 1.7;
+      color: var(--text);
+      flex: 1;
+      white-space: pre-wrap;
+    }
+
+    .solution-box {
+      margin-top: 20px;
+      padding: 16px;
+      background: var(--surface2);
+      border-radius: 12px;
+      border-left: 3px solid var(--accent3);
+      font-family: var(--font-mono);
+      font-size: 14px;
+      line-height: 1.7;
+      color: var(--text);
+      white-space: pre-wrap;
+      display: none;
+    }
+    .solution-box.visible { display: block; animation: fadeIn 0.3s ease; }
+
+    .reveal-btn {
+      margin-top: 16px;
+      padding: 12px;
+      background: transparent;
+      border: 1.5px dashed var(--border);
+      border-radius: 12px;
+      color: var(--text2);
+      font-family: var(--font-display);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      width: 100%;
+    }
+    .reveal-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* ── LOADING ── */
+    .loading-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      flex: 1;
+      padding: 40px;
+    }
+    .spinner {
+      width: 40px; height: 40px;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-text { color: var(--text2); font-size: 14px; }
+
+    /* ── SETTINGS ── */
+    .setting-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .setting-row:last-child { border-bottom: none; }
+    .setting-label { font-size: 15px; font-weight: 600; }
+    .setting-sub { font-size: 12px; color: var(--text2); margin-top: 2px; }
+    .number-input {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .num-btn {
+      width: 32px; height: 32px;
+      border-radius: 8px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-size: 18px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--font-display);
+      transition: background 0.15s;
+    }
+    .num-btn:hover { background: var(--border); }
+    .num-val { font-size: 18px; font-weight: 700; min-width: 28px; text-align: center; }
+
+    /* ── NAV ── */
+    .nav {
+      display: flex;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      padding: 8px 0 20px;
+    }
+    .nav-btn {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      padding: 10px;
+      background: none;
+      border: none;
+      color: var(--text2);
+      font-family: var(--font-display);
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: color 0.2s;
+    }
+    .nav-btn.active { color: var(--accent); }
+    .nav-icon { font-size: 20px; }
+
+    /* ── DONE STATE ── */
+    .done-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      flex: 1;
+      text-align: center;
+      gap: 16px;
+      padding: 40px 20px;
+    }
+    .done-emoji { font-size: 64px; }
+    .done-title { font-size: 26px; font-weight: 800; }
+    .done-sub { color: var(--text2); font-size: 15px; line-height: 1.6; }
+
+    /* ── STATS ── */
+    .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px;
+      text-align: center;
+    }
+    .stat-val { font-size: 28px; font-weight: 800; color: var(--accent); }
+    .stat-label { font-size: 12px; color: var(--text2); margin-top: 4px; }
+
+    /* ── GEMINI KEY INPUT ── */
+    .key-input {
+      width: 100%;
+      background: var(--surface2);
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 14px;
+      color: var(--text);
+      font-family: var(--font-mono);
+      font-size: 13px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .key-input:focus { border-color: var(--accent); }
+
+    .offline-banner {
+      background: rgba(247,151,30,0.15);
+      border: 1px solid var(--hard);
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-size: 13px;
+      color: var(--hard);
+      margin-bottom: 16px;
+      display: none;
+    }
+    .offline-banner.show { display: block; }
+
+    .queue-info {
+      font-size: 12px;
+      color: var(--text2);
+      text-align: center;
+      margin-top: 8px;
+    }
+
+    select {
+      background: var(--surface2);
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      padding: 8px 12px;
+      color: var(--text);
+      font-family: var(--font-display);
+      font-size: 14px;
+      outline: none;
+    }
+  </style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ── HOME SCREEN ── -->
+  <div class="screen active" id="screen-home">
+    <div class="header">
+      <div class="logo"><span>67</span>Maths</div>
+      <div class="streak-badge">🔥 <span id="streak-count">0</span> day streak</div>
+    </div>
+
+    <div class="offline-banner" id="offline-banner">📡 You're offline — using cached problems</div>
+
+    <div class="progress-wrap card">
+      <div class="card-label">Today's Progress</div>
+      <div class="progress-header">
+        <span class="progress-label">Problems answered</span>
+        <span class="progress-count"><span id="done-count">0</span>/<span id="goal-count">10</span></span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill" id="progress-fill" style="width:0%"></div>
+      </div>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-val" id="stat-easy">0</div>
+        <div class="stat-label">Easy ✓</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val" id="stat-missed" style="color:var(--accent2)">0</div>
+        <div class="stat-label">Missed ✗</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Topics</div>
+      <div class="chips" id="topic-chips">
+        <div class="chip active" data-topic="algebra">Algebra</div>
+        <div class="chip active" data-topic="calculus">Calculus</div>
+        <div class="chip active" data-topic="geometry">Geometry</div>
+        <div class="chip active" data-topic="trigonometry">Trigonometry</div>
+      </div>
+    </div>
+
+    <div class="queue-info" id="queue-info">📦 <span id="cache-count">0</span> problems cached</div>
+
+    <div style="flex:1"></div>
+    <button class="btn btn-primary" id="start-btn" style="margin-top:20px">
+      ▶ Start Studying
+    </button>
+  </div>
+
+  <!-- ── PROBLEM SCREEN ── -->
+  <div class="screen" id="screen-problem">
+    <div class="header">
+      <button class="btn-ghost" onclick="showScreen('home')" style="width:auto;padding:8px 16px;font-size:14px">← Back</button>
+      <div style="font-size:13px;color:var(--text2)"><span id="prob-num">1</span> of <span id="prob-total">10</span></div>
+    </div>
+
+    <div id="problem-loading" class="loading-wrap">
+      <div class="spinner"></div>
+      <div class="loading-text">Generating problem...</div>
+    </div>
+
+    <div id="problem-content" style="display:none;flex-direction:column;flex:1">
+      <div class="problem-card">
+        <div class="problem-meta">
+          <span class="tag tag-topic" id="tag-topic">Algebra</span>
+          <span class="tag tag-type" id="tag-type">Problem</span>
+          <span class="tag" id="tag-diff">Medium</span>
+        </div>
+        <div class="problem-text" id="problem-text"></div>
+        <button class="reveal-btn" id="reveal-btn" onclick="revealSolution()">👁 Reveal Solution</button>
+        <div class="solution-box" id="solution-box"></div>
+      </div>
+
+      <div class="grade-btns" id="grade-btns" style="display:none">
+        <button class="btn btn-missed" onclick="gradeAnswer('missed')">✗ Missed</button>
+        <button class="btn btn-hard" onclick="gradeAnswer('hard')">~ Hard</button>
+        <button class="btn btn-easy" onclick="gradeAnswer('easy')">✓ Easy</button>
+      </div>
+    </div>
+
+    <div id="problem-done" class="done-wrap" style="display:none">
+      <div class="done-emoji">🎉</div>
+      <div class="done-title">Session Complete!</div>
+      <div class="done-sub">You've answered all <span id="done-total"></span> problems for today. Come back tomorrow!</div>
+      <button class="btn btn-primary" onclick="showScreen('home')" style="margin-top:12px">Back to Home</button>
+    </div>
+  </div>
+
+  <!-- ── SETTINGS SCREEN ── -->
+  <div class="screen" id="screen-settings">
+    <div class="header">
+      <div class="logo"><span>67</span>Maths</div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Daily Goal</div>
+      <div class="setting-row">
+        <div>
+          <div class="setting-label">Problems per day</div>
+          <div class="setting-sub">How many to answer daily</div>
+        </div>
+        <div class="number-input">
+          <button class="num-btn" onclick="adjustGoal(-1)">−</button>
+          <div class="num-val" id="goal-display">10</div>
+          <button class="num-btn" onclick="adjustGoal(1)">+</button>
+        </div>
+      </div>
+      <div class="setting-row">
+        <div>
+          <div class="setting-label">Difficulty</div>
+          <div class="setting-sub">Problem difficulty level</div>
+        </div>
+        <select id="difficulty-select" onchange="saveDifficulty()">
+          <option value="easy">Easy</option>
+          <option value="medium" selected>Medium</option>
+          <option value="hard">Hard</option>
+          <option value="mixed">Mixed</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Gemini API Key</div>
+      <div style="margin-bottom:10px;font-size:13px;color:var(--text2)">Get a free key at aistudio.google.com</div>
+      <input class="key-input" type="password" id="gemini-key-input" placeholder="AIzaSy..." />
+      <button class="btn btn-primary" onclick="saveGeminiKey()" style="margin-top:12px">Save Key</button>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Problem Cache</div>
+      <div class="setting-row">
+        <div>
+          <div class="setting-label">Cached problems</div>
+          <div class="setting-sub">Stored for offline use</div>
+        </div>
+        <div style="font-weight:700;font-size:18px" id="settings-cache-count">0</div>
+      </div>
+      <button class="btn btn-ghost" onclick="prefetchProblems()" style="margin-top:4px">🔄 Fetch 5 Problems Now</button>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Danger Zone</div>
+      <button class="btn btn-ghost" onclick="resetProgress()" style="color:var(--missed);border-color:var(--missed)">🗑 Reset Today's Progress</button>
+    </div>
+  </div>
+
+  <!-- ── NAV ── -->
+  <nav class="nav">
+    <button class="nav-btn active" id="nav-home" onclick="showScreen('home')">
+      <span class="nav-icon">🏠</span> Home
+    </button>
+    <button class="nav-btn" id="nav-problem" onclick="startSession()">
+      <span class="nav-icon">✏️</span> Study
+    </button>
+    <button class="nav-btn" id="nav-settings" onclick="showScreen('settings')">
+      <span class="nav-icon">⚙️</span> Settings
+    </button>
+  </nav>
+</div>
+
+<script>
+// ── FIREBASE CONFIG ──
+let db = null, auth = null;
+try {
+  const firebaseConfig = {
+    apiKey: "AIzaSyAhgtb-6crFueGUbm-i-MlxOrBIxcweEIU",
+    authDomain: "math-541a3.firebaseapp.com",
+    projectId: "math-541a3",
+    storageBucket: "math-541a3.firebasestorage.app",
+    messagingSenderId: "659106751555",
+    appId: "1:659106751555:web:34121ac01eaf6f585d20f6"
+  };
+  firebase.initializeApp(firebaseConfig);
+  db = firebase.firestore();
+  auth = firebase.auth();
+} catch(e) {
+  console.log('Firebase not available, running in local-only mode:', e);
+}
+
+// ── STATE ──
+let state = {
+  userId: null,
+  dailyGoal: 10,
+  difficulty: 'medium',
+  geminiKey: '',
+  todayDone: 0,
+  todayEasy: 0,
+  todayMissed: 0,
+  streak: 0,
+  activeTopics: ['algebra','calculus','geometry','trigonometry'],
+  cachedProblems: [],
+  sessionProblems: [],
+  sessionIndex: 0,
+  srsData: {},
+  syncQueue: [],
+  isOnline: navigator.onLine
+};
+
+// ── INIT ──
+window.addEventListener('load', async () => {
+  loadLocalState();
+  setupOnlineListener();
+  await signInAnon();
+  updateUI();
+  updateCacheCount();
+  checkAndPrefetch();
+});
+
+function loadLocalState() {
+  const saved = localStorage.getItem('mathanki_state');
+  if (saved) {
+    const parsed = JSON.parse(saved);
+    Object.assign(state, parsed);
+    // Reset daily counters if new day
+    const today = new Date().toDateString();
+    if (state.lastDate !== today) {
+      state.todayDone = 0;
+      state.todayEasy = 0;
+      state.todayMissed = 0;
+      state.lastDate = today;
+      // Update streak
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      if (state.lastActiveDate === yesterday.toDateString()) {
+        state.streak = (state.streak || 0) + 1;
+      } else if (state.lastActiveDate !== today) {
+        state.streak = 1;
+      }
+    }
+  }
+  // Load cached problems from localStorage
+  const cached = localStorage.getItem('mathanki_cache');
+  if (cached) state.cachedProblems = JSON.parse(cached);
+  const srs = localStorage.getItem('mathanki_srs');
+  if (srs) state.srsData = JSON.parse(srs);
+  const queue = localStorage.getItem('mathanki_syncqueue');
+  if (queue) state.syncQueue = JSON.parse(queue);
+  // Load gemini key
+  state.geminiKey = localStorage.getItem('mathanki_gemini') || '';
+}
+
+function saveLocalState() {
+  const toSave = { ...state, cachedProblems: [], srsData: state.srsData, syncQueue: state.syncQueue };
+  localStorage.setItem('mathanki_state', JSON.stringify(toSave));
+  localStorage.setItem('mathanki_cache', JSON.stringify(state.cachedProblems));
+  localStorage.setItem('mathanki_srs', JSON.stringify(state.srsData));
+  localStorage.setItem('mathanki_syncqueue', JSON.stringify(state.syncQueue));
+}
+
+async function signInAnon() {
+  if (!auth) return;
+  try {
+    const result = await auth.signInAnonymously();
+    state.userId = result.user.uid;
+    await syncFromFirebase();
+    await flushSyncQueue();
+  } catch(e) { console.log('Auth error:', e); }
+}
+
+function setupOnlineListener() {
+  window.addEventListener('online', async () => {
+    state.isOnline = true;
+    document.getElementById('offline-banner').classList.remove('show');
+    await flushSyncQueue();
+    await checkAndPrefetch();
+  });
+  window.addEventListener('offline', () => {
+    state.isOnline = false;
+    document.getElementById('offline-banner').classList.add('show');
+  });
+  if (!navigator.onLine) document.getElementById('offline-banner').classList.add('show');
+}
+
+// ── FIREBASE SYNC ──
+async function syncFromFirebase() {
+  if (!state.userId || !state.isOnline || !db) return;
+  try {
+    const docRef = db.collection('users').doc(state.userId);
+    const snap = await docRef.get();
+    if (snap.exists) {
+      const data = snap.data();
+      const today = new Date().toDateString();
+      if (data.lastDate === today) {
+        state.todayDone = data.todayDone || 0;
+        state.todayEasy = data.todayEasy || 0;
+        state.todayMissed = data.todayMissed || 0;
+      }
+      state.streak = data.streak || state.streak;
+      state.srsData = { ...data.srsData, ...state.srsData };
+      saveLocalState();
+      updateUI();
+    }
+  } catch(e) { console.log('Sync error:', e); }
+}
+
+async function syncToFirebase() {
+  if (!state.userId || !state.isOnline || !db) {
+    state.syncQueue.push({
+      todayDone: state.todayDone,
+      todayEasy: state.todayEasy,
+      todayMissed: state.todayMissed,
+      streak: state.streak,
+      srsData: state.srsData,
+      lastDate: state.lastDate,
+      ts: Date.now()
+    });
+    saveLocalState();
+    return;
+  }
+  try {
+    const docRef = db.collection('users').doc(state.userId);
+    await docRef.set({
+      todayDone: state.todayDone,
+      todayEasy: state.todayEasy,
+      todayMissed: state.todayMissed,
+      streak: state.streak,
+      srsData: state.srsData,
+      lastDate: state.lastDate,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    }, { merge: true });
+  } catch(e) { console.log('Firebase write error:', e); }
+}
+
+async function flushSyncQueue() {
+  if (!state.syncQueue.length || !state.isOnline || !state.userId || !db) return;
+  const latest = state.syncQueue[state.syncQueue.length - 1];
+  try {
+    const docRef = db.collection('users').doc(state.userId);
+    await docRef.set({
+      ...latest,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    }, { merge: true });
+    state.syncQueue = [];
+    saveLocalState();
+  } catch(e) { console.log('Queue flush error:', e); }
+}
+
+// ── SRS (SM-2 simplified) ──
+function getSRSInterval(topic, result) {
+  const key = topic;
+  const srs = state.srsData[key] || { interval: 1, ease: 2.5, due: 0 };
+  let { interval, ease } = srs;
+
+  if (result === 'easy') {
+    ease = Math.min(ease + 0.15, 3.0);
+    interval = Math.round(interval * ease);
+  } else if (result === 'hard') {
+    ease = Math.max(ease - 0.15, 1.3);
+    interval = Math.max(1, Math.round(interval * 1.2));
+  } else { // missed
+    ease = Math.max(ease - 0.3, 1.3);
+    interval = 1;
+  }
+
+  const due = Date.now() + interval * 24 * 60 * 60 * 1000;
+  state.srsData[key] = { interval, ease, due };
+  return interval;
+}
+
+// ── GEMINI PROBLEM GENERATION ──
+async function generateProblems(count = 20) {
+  const key = state.geminiKey;
+  if (!key) return [];
+  if (!state.isOnline) return [];
+  console.log('Using Gemini key starting with:', key.substring(0, 10) + '...');
+
+  const topics = state.activeTopics.length ? state.activeTopics : ['algebra'];
+  const types = ['concept-based', 'problem-solving', 'word problem'];
+  const diffs = state.difficulty === 'mixed'
+    ? ['easy','medium','hard']
+    : [state.difficulty];
+
+  const prompt = `Generate ${count} unique math problems as a JSON array. Each problem object must have exactly these fields:
+- "topic": one of ${JSON.stringify(topics)}
+- "type": one of ${JSON.stringify(types)}
+- "difficulty": one of ${JSON.stringify(diffs)}
+- "problem": the problem statement (2-3 sentences max)
+- "solution": brief step-by-step solution (3-4 steps max, keep each step short)
+
+IMPORTANT: Keep solutions concise. Return ONLY the JSON array, no markdown, no explanation, no extra text.`;
+
+  try {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: {
+          temperature: 0.9,
+          maxOutputTokens: 3000
+        },
+        thinkingConfig: {
+          thinkingBudget: 0
+        }
+      })
+    });
+    const data = await res.json();
+    console.log('Gemini response:', JSON.stringify(data));
+
+    if (data.error) {
+      alert('Gemini API error: ' + data.error.message + '\n\nCode: ' + data.error.code);
+      return [];
+    }
+
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '[]';
+    // Aggressively strip all markdown formatting
+    let clean = text.trim();
+    // Remove ```json ... ``` or ``` ... ```
+    clean = clean.replace(/^```[\w]*\n?/m, '').replace(/\n?```$/m, '').trim();
+    // Find the JSON array — look for first [ and last ]
+    const start = clean.indexOf('[');
+    const end = clean.lastIndexOf(']');
+    if (start !== -1 && end !== -1) {
+      clean = clean.substring(start, end + 1);
+    }
+    try {
+      const problems = JSON.parse(clean);
+      return Array.isArray(problems) ? problems : [];
+    } catch(parseErr) {
+      console.log('JSON parse error:', parseErr, 'Raw text:', clean);
+      return [];
+    }
+  } catch(e) {
+    console.log('Gemini fetch error:', e);
+    alert('Network error calling Gemini: ' + e.message);
+    return [];
+  }
+}
+
+async function checkAndPrefetch() {
+  if (state.cachedProblems.length < 5 && state.isOnline && state.geminiKey) {
+    await prefetchProblems();
+  }
+}
+
+async function prefetchProblems() {
+  if (!state.geminiKey) {
+    alert('Please add your Gemini API key in Settings first!');
+    showScreen('settings');
+    return;
+  }
+  if (!state.isOnline) {
+    alert('You need to be online to fetch problems.');
+    return;
+  }
+  const btn = document.querySelector('[onclick="prefetchProblems()"]');
+  if (btn) btn.textContent = '⏳ Fetching...';
+
+  const problems = await generateProblems(5);
+  state.cachedProblems.push(...problems);
+  saveLocalState();
+  updateCacheCount();
+  if (btn) btn.textContent = '🔄 Fetch 5 Problems Now';
+  if (problems.length > 0) {
+    alert(`✅ ${problems.length} problems cached and ready!`);
+  } else {
+    alert('⚠️ Could not fetch problems. Check your API key and internet connection.');
+  }
+}
+
+// ── SESSION ──
+async function startSession() {
+  if (!state.geminiKey) {
+    showScreen('settings');
+    alert('Please add your Gemini API key in Settings first!');
+    return;
+  }
+
+  const remaining = state.dailyGoal - state.todayDone;
+  if (remaining <= 0) {
+    showScreen('problem');
+    showDoneState();
+    return;
+  }
+
+  // Pull from cache
+  state.sessionProblems = state.cachedProblems.splice(0, Math.min(remaining, state.cachedProblems.length));
+  saveLocalState();
+  state.sessionIndex = 0;
+
+  if (state.sessionProblems.length === 0 && state.isOnline) {
+    // Generate on the fly
+    showScreen('problem');
+    showProblemLoading();
+    const fresh = await generateProblems(10);
+    state.sessionProblems = fresh;
+    saveLocalState();
+  }
+
+  if (state.sessionProblems.length === 0) {
+    alert('No problems available. Please go online to fetch problems or check your Gemini API key.');
+    return;
+  }
+
+  showScreen('problem');
+  showCurrentProblem();
+  checkAndPrefetch(); // Refill cache in background
+}
+
+function showCurrentProblem() {
+  const prob = state.sessionProblems[state.sessionIndex];
+  if (!prob) { showDoneState(); return; }
+
+  document.getElementById('prob-num').textContent = state.todayDone + 1;
+  document.getElementById('prob-total').textContent = state.dailyGoal;
+  document.getElementById('problem-loading').style.display = 'none';
+  document.getElementById('problem-content').style.display = 'flex';
+  document.getElementById('problem-done').style.display = 'none';
+  document.getElementById('grade-btns').style.display = 'none';
+  document.getElementById('solution-box').classList.remove('visible');
+  document.getElementById('reveal-btn').style.display = 'block';
+
+  document.getElementById('tag-topic').textContent = prob.topic || 'Math';
+  document.getElementById('tag-type').textContent = prob.type || 'Problem';
+
+  const diff = (prob.difficulty || 'medium').toLowerCase();
+  const diffTag = document.getElementById('tag-diff');
+  diffTag.textContent = diff.charAt(0).toUpperCase() + diff.slice(1);
+  diffTag.className = `tag tag-diff-${diff}`;
+
+  document.getElementById('problem-text').textContent = prob.problem || '';
+  document.getElementById('solution-box').textContent = '💡 Solution:\n\n' + (prob.solution || '');
+}
+
+function showProblemLoading() {
+  document.getElementById('problem-loading').style.display = 'flex';
+  document.getElementById('problem-content').style.display = 'none';
+  document.getElementById('problem-done').style.display = 'none';
+}
+
+function revealSolution() {
+  document.getElementById('solution-box').classList.add('visible');
+  document.getElementById('reveal-btn').style.display = 'none';
+  document.getElementById('grade-btns').style.display = 'grid';
+}
+
+async function gradeAnswer(result) {
+  const prob = state.sessionProblems[state.sessionIndex];
+  if (!prob) return;
+
+  // SRS
+  getSRSInterval(prob.topic, result);
+
+  // Stats
+  state.todayDone++;
+  state.lastDate = new Date().toDateString();
+  state.lastActiveDate = state.lastDate;
+  if (result === 'easy') state.todayEasy++;
+  if (result === 'missed') state.todayMissed++;
+
+  saveLocalState();
+  await syncToFirebase();
+  updateUI();
+
+  state.sessionIndex++;
+  if (state.todayDone >= state.dailyGoal || state.sessionIndex >= state.sessionProblems.length) {
+    showDoneState();
+  } else {
+    showCurrentProblem();
+  }
+}
+
+function showDoneState() {
+  document.getElementById('problem-loading').style.display = 'none';
+  document.getElementById('problem-content').style.display = 'none';
+  document.getElementById('problem-done').style.display = 'flex';
+  document.getElementById('done-total').textContent = state.dailyGoal;
+}
+
+// ── UI ──
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + name).classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('nav-' + (name === 'problem' ? 'problem' : name)).classList.add('active');
+
+  if (name === 'settings') {
+    document.getElementById('goal-display').textContent = state.dailyGoal;
+    document.getElementById('gemini-key-input').value = state.geminiKey || '';
+    document.getElementById('difficulty-select').value = state.difficulty;
+    document.getElementById('settings-cache-count').textContent = state.cachedProblems.length;
+  }
+}
+
+function updateUI() {
+  const done = state.todayDone;
+  const goal = state.dailyGoal;
+  const pct = Math.min(100, (done / goal) * 100);
+
+  document.getElementById('done-count').textContent = done;
+  document.getElementById('goal-count').textContent = goal;
+  document.getElementById('progress-fill').style.width = pct + '%';
+  document.getElementById('streak-count').textContent = state.streak || 0;
+  document.getElementById('stat-easy').textContent = state.todayEasy;
+  document.getElementById('stat-missed').textContent = state.todayMissed;
+
+  // Topic chips
+  document.querySelectorAll('.chip[data-topic]').forEach(chip => {
+    const t = chip.dataset.topic;
+    chip.classList.toggle('active', state.activeTopics.includes(t));
+  });
+}
+
+function updateCacheCount() {
+  document.getElementById('cache-count').textContent = state.cachedProblems.length;
+  document.getElementById('settings-cache-count').textContent = state.cachedProblems.length;
+}
+
+// ── TOPIC CHIPS ──
+document.querySelectorAll('.chip[data-topic]').forEach(chip => {
+  chip.addEventListener('click', () => {
+    const t = chip.dataset.topic;
+    const idx = state.activeTopics.indexOf(t);
+    if (idx > -1) {
+      if (state.activeTopics.length === 1) return; // keep at least 1
+      state.activeTopics.splice(idx, 1);
+    } else {
+      state.activeTopics.push(t);
+    }
+    chip.classList.toggle('active');
+    saveLocalState();
+  });
+});
+
+// ── SETTINGS ──
+function adjustGoal(delta) {
+  state.dailyGoal = Math.max(1, Math.min(50, state.dailyGoal + delta));
+  document.getElementById('goal-display').textContent = state.dailyGoal;
+  document.getElementById('goal-count').textContent = state.dailyGoal;
+  saveLocalState();
+}
+
+function saveDifficulty() {
+  state.difficulty = document.getElementById('difficulty-select').value;
+  saveLocalState();
+}
+
+function saveGeminiKey() {
+  const key = document.getElementById('gemini-key-input').value.trim();
+  if (!key) { alert('Please enter a valid API key.'); return; }
+  state.geminiKey = key;
+  localStorage.setItem('mathanki_gemini', key);
+  saveLocalState();
+  alert('✅ API key saved!');
+  checkAndPrefetch();
+}
+
+function resetProgress() {
+  if (!confirm('Reset today\'s progress?')) return;
+  state.todayDone = 0;
+  state.todayEasy = 0;
+  state.todayMissed = 0;
+  saveLocalState();
+  syncToFirebase();
+  updateUI();
+  showScreen('home');
+}
+
+document.getElementById('start-btn').addEventListener('click', startSession);
+
+// ── SERVICE WORKER REGISTRATION ──
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js')
+      .then(() => console.log('Service Worker registered'))
+      .catch(e => console.log('SW registration failed:', e));
+  });
+}
+</script>
+</body>
+</html>
